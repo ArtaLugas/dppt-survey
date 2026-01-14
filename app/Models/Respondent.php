@@ -35,8 +35,25 @@ class Respondent extends Model
         return $this->belongsTo(RespondentRole::class, 'respondent_role_id');
     }
 
+
     public function gender()
     {
         return $this->belongsTo(GenderType::class);
     }
+
+    protected static function booted()
+    {
+        static::updating(function ($model) {
+            if ($model->interview?->status?->is_final) {
+                throw new \DomainException('LOCKED interview is read-only');
+            }
+        });
+
+        static::deleting(function ($model) {
+            if ($model->interview?->status?->is_final) {
+                throw new \DomainException('LOCKED interview is read-only');
+            }
+        });
+    }
+
 }

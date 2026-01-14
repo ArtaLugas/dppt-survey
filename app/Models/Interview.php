@@ -67,6 +67,10 @@ class Interview extends Model
         return $this->hasMany(AuditLog::class);
     }
 
+    public function snapshots()
+    {
+        return $this->hasMany(InterviewSnapshot::class);
+    }
     // ================= PASIVE HELPERS =================
 
     public function isLocked(): bool

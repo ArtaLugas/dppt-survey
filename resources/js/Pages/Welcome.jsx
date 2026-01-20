@@ -141,7 +141,7 @@ export default function Welcome() {
 
                 {/* Footer */}
                 <footer className="border-t bg-white py-4 text-center text-sm text-gray-500">
-                    Project Data Collection System Dashboard
+                    Project Data Collection System Dashboard - &copy; 2026 EQUATOR GROUP
                 </footer>
             </div>
         </>

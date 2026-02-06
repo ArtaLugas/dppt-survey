@@ -5,7 +5,6 @@ export default function Login({ status, canResetPassword }) {
     const { data, setData, post, processing, errors, reset } = useForm({
         email: '',
         password: '',
-        remember: false,
     });
 
     useEffect(() => {
@@ -25,10 +24,6 @@ export default function Login({ status, canResetPassword }) {
 
     const handlePasswordChange = (e) => {
         setData('password', e.target.value);
-    };
-
-    const handleRememberChange = (e) => {
-        setData('remember', e.target.checked);
     };
 
     return (
@@ -73,10 +68,14 @@ export default function Login({ status, canResetPassword }) {
 
                             {/* Status Message */}
                             {status && (
-                                <div className="mb-6 p-4 rounded-xl border-l-4" style={{ backgroundColor: '#E3F2FD', borderColor: '#006CCD' }}>
-                                    <p className="text-sm font-semibold" style={{ color: '#006CCD' }}>{status}</p>
+                                <div className="mb-6 p-4 rounded-xl border-l-4"
+                                    style={{ backgroundColor: '#E8F5E9', borderColor: '#2E7D32' }}>
+                                    <p className="text-sm font-semibold text-[#2E7D32]">
+                                        {status}
+                                    </p>
                                 </div>
                             )}
+
 
                             {/* Login Form */}
                             <form onSubmit={handleSubmit} className="space-y-6">
@@ -146,19 +145,7 @@ export default function Login({ status, canResetPassword }) {
                                 </div>
 
                                 {/* Remember Me & Forgot Password */}
-                                <div className="flex items-center justify-between pt-1">
-                                    <label className="flex items-center cursor-pointer group">
-                                        <input
-                                            type="checkbox"
-                                            name="remember"
-                                            checked={data.remember}
-                                            onChange={handleRememberChange}
-                                            className="w-4 h-4 border-2 border-gray-300 rounded cursor-pointer transition-all"
-                                            style={{ accentColor: '#006CCD' }}
-                                        />
-                                        <span className="ml-2 text-sm text-gray-700 group-hover:text-gray-900 font-medium transition-colors">Remember me</span>
-                                    </label>
-
+                                <div className="flex items-center justify-end pt-1">
                                     {canResetPassword && (
                                         <Link
                                             href={route('password.request')}

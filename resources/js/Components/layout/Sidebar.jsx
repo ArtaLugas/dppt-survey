@@ -21,17 +21,17 @@ import { cn } from '@/lib/utils';
 ========================= */
 const menuItems = {
     surveyor: [
-        { label: 'Dashboard', icon: LayoutDashboard, path: '/surveyor' },
+        { label: 'Dashboard', icon: LayoutDashboard, path: '/surveyor/dashboard' },
         { label: 'Create Interview', icon: FilePlus, path: '/interviews/create' },
         { label: 'My Interviews', icon: FileText, path: '/interviews' },
     ],
     koordinator: [
-        { label: 'Dashboard', icon: LayoutDashboard, path: '/koordinator' },
+        { label: 'Dashboard', icon: LayoutDashboard, path: '/koordinator/dashboard' },
         { label: 'Submitted Interviews', icon: ClipboardCheck, path: '/koordinator/submitted' },
         { label: 'Verified Interviews', icon: FileCheck, path: '/koordinator/verified' },
     ],
     admin: [
-        { label: 'Dashboard', icon: LayoutDashboard, path: '/admin' },
+        { label: 'Dashboard', icon: LayoutDashboard, path: '/admin/dashboard' },
         { label: 'All Interviews', icon: FileText, path: '/admin/interviews' },
         { label: 'Users Management', icon: Users, path: '/admin/users' },
         { label: 'Audit Logs', icon: ScrollText, path: '/admin/audit' },
@@ -149,29 +149,32 @@ export function Sidebar() {
    SIDEBAR ITEM
 ========================= */
 function SidebarItem({ item, currentUrl, collapsed }) {
-    const Icon = item.icon;
-    const path = currentUrl.split('?')[0];
+  const Icon = item.icon;
+  const path = currentUrl.split('?')[0];
 
-    const active =
-        path === item.path ||
-        path.startsWith(item.path + '/');
+  const isDashboard = item.path.endsWith('/dashboard');
 
-    return (
-        <Link
-            href={item.path}
-            className={cn(
-                'group relative flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition',
-                collapsed && 'justify-center px-3',
-                active
-                    ? 'bg-blue-600 text-white shadow'
-                    : 'text-slate-700 hover:bg-slate-100'
-            )}
-        >
-            <Icon className="h-5 w-5" />
-            {!collapsed && <span>{item.label}</span>}
-        </Link>
-    );
+  const active = isDashboard
+    ? path === item.path
+    : path === item.path || path.startsWith(item.path + '/');
+
+  return (
+    <Link
+      href={item.path}
+      className={cn(
+        'group relative flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition',
+        collapsed && 'justify-center px-3',
+        active
+          ? 'bg-blue-600 text-white shadow'
+          : 'text-slate-700 hover:bg-slate-100'
+      )}
+    >
+      <Icon className="h-5 w-5" />
+      {!collapsed && <span>{item.label}</span>}
+    </Link>
+  );
 }
+
 
 function LogoutButton() {
     const [loading, setLoading] = useState(false);

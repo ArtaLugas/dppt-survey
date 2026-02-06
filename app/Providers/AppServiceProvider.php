@@ -29,6 +29,13 @@ class AppServiceProvider extends ServiceProvider
                     'role' => auth()->user()->role->code,
                 ] : null,
             ],
+
+            'flash' => function () {
+                return [
+                    'success' => session('success'),
+                    'error' => session('error'),
+                ];
+            }
         ]);
     }
 }

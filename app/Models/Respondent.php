@@ -3,57 +3,38 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\SoftDeletes;
-use App\Models\RespondentRole;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Respondent extends Model
 {
-    use SoftDeletes;
-
-    protected $fillable = [
-        'interview_id',
-        'nama',
-        'respondent_role_id',
-        'gender_id',
-        'nik',
-        'tanggal_lahir',
-        'pekerjaan',
-        'alamat_ktp',
-    ];
+    protected $guarded = ['id'];
 
     protected $casts = [
-        'tanggal_lahir' => 'date',
+        'is_primary'        => 'boolean',
+        'tanggal_lahir'     => 'date',
+        'nik'               => 'string',
+        'parcel_id'         => 'integer',
+        'role_id'           => 'integer',
     ];
 
-    public function interview()
+    // ---- Relations ----
+
+    public function role(): BelongsTo
     {
-        return $this->belongsTo(Interview::class);
+        return $this->belongsTo(RespondentRole::class, 'role_id');
     }
 
-    public function role()
+    public function parcel(): BelongsTo
     {
-        return $this->belongsTo(RespondentRole::class, 'respondent_role_id');
+        return $this->belongsTo(Parcel::class);
     }
 
-
-    public function gender()
+    /**
+     * Membantu Frontend menampilkan Label Role tanpa perlu lookup table terpisah
+     * Penggunaan: $respondent->role_label
+     */
+    public function getRoleLabelAttribute(): string
     {
-        return $this->belongsTo(GenderType::class);
+        return $this->role->label ?? 'Tidak Diketahui';
     }
-
-    protected static function booted()
-    {
-        static::updating(function ($model) {
-            if ($model->interview?->status?->is_final) {
-                throw new \DomainException('LOCKED interview is read-only');
-            }
-        });
-
-        static::deleting(function ($model) {
-            if ($model->interview?->status?->is_final) {
-                throw new \DomainException('LOCKED interview is read-only');
-            }
-        });
-    }
-
 }

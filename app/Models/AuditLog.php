@@ -3,30 +3,32 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use App\Models\User;
-use App\Models\Interview;
 
 class AuditLog extends Model
 {
-    public $timestamps = false;
+    protected $table = 'audit_logs';
 
     protected $fillable = [
+        'parcel_id',
         'user_id',
-        'interview_id',
         'action',
-        'change_type',
-        'entity_type',
-        'entity_id',
-        'created_at',
+        'old_values',
+        'new_values',
+        'ip_address',
     ];
+
+    protected $casts = [
+        'old_values' => 'array',
+        'new_values' => 'array',
+    ];
+
+    public function parcel()
+    {
+        return $this->belongsTo(Parcel::class, 'parcel_id');
+    }
 
     public function user()
     {
-        return $this->belongsTo(User::class);
-    }
-
-    public function interview()
-    {
-        return $this->belongsTo(Interview::class);
+        return $this->belongsTo(User::class, 'user_id');
     }
 }

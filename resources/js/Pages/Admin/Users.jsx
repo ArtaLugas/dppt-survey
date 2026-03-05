@@ -3,7 +3,7 @@ import { Head, useForm, usePage, router } from '@inertiajs/react';
 import {
   Search, Filter, UserPlus, RotateCcw, Edit2, User, ClipboardList,
   CheckCircle2, Save, Users, Lock, KeyRound, UserCheck, UserCog,
-  Mail, Info, Send, AlertTriangle, Power, Loader2, Trash2,
+  Mail, Info, Send, AlertTriangle, Power, Loader2, Trash2, ShieldAlert
 } from 'lucide-react';
 
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
@@ -26,15 +26,16 @@ import { useToast } from '@/hooks/use-toast';
 
 // --- Constants ---
 const ROLE_COLORS = {
-  admin: 'default',
-  koordinator: 'outline',
-  surveyor: 'secondary',
+  admin: 'destructive',      // Merah untuk Admin
+  koordinator: 'default',    // Hitam/Gelap untuk Koordinator
+  surveyor: 'secondary',     // Abu-abu untuk Surveyor
 };
 
 // --- Main Component ---
-export default function AdminUsers({ users: initialUsers }) {
+// Menerima 'roles' dari Controller untuk data dinamis
+export default function AdminUsers({ users: initialUsers, roles }) {
   const { toast } = useToast();
-  const { flash } = usePage().props;
+  const { flash, auth } = usePage().props;
 
   // State
   const users = initialUsers;
@@ -46,7 +47,7 @@ export default function AdminUsers({ users: initialUsers }) {
   const [createUserOpen, setCreateUserOpen] = useState(false);
   const [editUserDialog, setEditUserDialog] = useState({ open: false, user: null });
   const [resetPasswordDialog, setResetPasswordDialog] = useState({ open: false, user: null });
-  const [deactivateDialog, setDeactivateDialog] = useState({ open: false, user: null });
+  const [toggleStatusDialog, setToggleStatusDialog] = useState({ open: false, user: null }); // Ganti Deactivate jadi Toggle
   const [deleteDialog, setDeleteDialog] = useState({ open: false, user: null });
 
   // Loading States
@@ -55,28 +56,35 @@ export default function AdminUsers({ users: initialUsers }) {
   const [isDeleting, setIsDeleting] = useState(false);
 
   // Forms
-  const createForm = useForm({ name: '', email: '', role_id: '', password: '' });
-  const editForm = useForm({ name: '', email: '', role_id: '' });
+  const createForm = useForm({ name: '', email: '', role_id: '', password: '', password_confirmation: '' });
+  const editForm = useForm({ name: '', email: '', role_id: '', password: '', password_confirmation: '' });
 
-  // --- Derived State & Logic ---
+  // --- Derived State & Logic (Updated for New DB Structure) ---
+
+  // Update stats logic: use role_code instead of role
   const userStats = {
-    surveyors: users.filter(u => u.role === 'surveyor').length,
-    koordinators: users.filter(u => u.role === 'koordinator').length,
+    surveyors: users.filter(u => u.role_code === 'surveyor').length,
+    koordinators: users.filter(u => u.role_code === 'koordinator').length,
   };
 
   const managedUsers = users.filter(
-    (u) => u.role === 'surveyor' || u.role === 'koordinator'
+    (u) => u.role_code === 'surveyor' || u.role_code === 'koordinator' || u.role_code === 'admin'
   );
 
   const filteredUsers = managedUsers.filter((user) => {
     const matchesSearch =
       user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       user.email.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesRole = roleFilter === 'all' || user.role === roleFilter;
+
+    // Update: user.role_code
+    const matchesRole = roleFilter === 'all' || user.role_code === roleFilter;
+
+    // Update: user.is_active
     const matchesStatus =
       statusFilter === 'all' ||
-      (statusFilter === 'active' && user.isActive) ||
-      (statusFilter === 'inactive' && !user.isActive);
+      (statusFilter === 'active' && user.is_active) ||
+      (statusFilter === 'inactive' && !user.is_active);
+
     return matchesSearch && matchesRole && matchesStatus;
   });
 
@@ -114,7 +122,9 @@ export default function AdminUsers({ users: initialUsers }) {
     editForm.setData({
       name: user.name,
       email: user.email,
-      role_id: user.role_id,
+      role_id: String(user.role_id), // Pastikan string untuk selection
+      password: '',
+      password_confirmation: ''
     });
     setEditUserDialog({ open: true, user });
   };
@@ -135,15 +145,15 @@ export default function AdminUsers({ users: initialUsers }) {
     });
   };
 
-  const handleDeactivate = () => {
-    if (!deactivateDialog.user) return;
-    router.put(route('admin.users.toggle', deactivateDialog.user.id), {}, {
+  // Update: Menggunakan endpoint toggle-status
+  const handleToggleStatus = () => {
+    if (!toggleStatusDialog.user) return;
+    router.put(route('admin.users.toggle', toggleStatusDialog.user.id), {}, {
       preserveScroll: true,
       onStart: () => setIsTogglingStatus(true),
       onFinish: () => setIsTogglingStatus(false),
       onSuccess: () => {
-        toast({ title: 'Status Updated', description: `User successfully ${deactivateDialog.user.isActive ? 'deactivated' : 'activated'}.` });
-        setDeactivateDialog({ open: false, user: null });
+        setToggleStatusDialog({ open: false, user: null });
       },
       onError: () => toast({ title: 'Error', description: 'Failed to update user status.', variant: 'destructive' }),
     });
@@ -159,14 +169,15 @@ export default function AdminUsers({ users: initialUsers }) {
         toast({ title: 'User Deleted', description: 'User has been successfully deleted.' });
         setDeleteDialog({ open: false, user: null });
       },
-      onError: () => toast({ title: 'Error', description: 'Failed to delete user.', variant: 'destructive' }),
+      // Error ditangani oleh flash message dari controller (Exception)
     });
   };
 
   return (
     <>
       <Head title="Users Management" />
-      <DashboardLayout userName="Eka Wijaya" userRole="admin">
+      {/* Menggunakan auth.user dari props global */}
+      <DashboardLayout userName={auth.user.name} userRole={auth.user.role?.code || 'admin'}>
         <div className="space-y-6">
 
           {/* Header & Create Button */}
@@ -200,9 +211,10 @@ export default function AdminUsers({ users: initialUsers }) {
 
           <UsersTable
             users={filteredUsers}
+            currentUserId={auth.user.id}
             onEdit={openEditDialog}
             onReset={setResetPasswordDialog}
-            onDeactivate={setDeactivateDialog}
+            onToggleStatus={setToggleStatusDialog}
             onDelete={setDeleteDialog}
           />
         </div>
@@ -223,10 +235,10 @@ export default function AdminUsers({ users: initialUsers }) {
         />
 
         <StatusConfirmDialog
-          dialog={deactivateDialog}
-          setDialog={setDeactivateDialog}
+          dialog={toggleStatusDialog}
+          setDialog={setToggleStatusDialog}
           isLoading={isTogglingStatus}
-          onConfirm={handleDeactivate}
+          onConfirm={handleToggleStatus}
         />
 
         <DeleteConfirmDialog
@@ -242,7 +254,7 @@ export default function AdminUsers({ users: initialUsers }) {
 }
 
 // ==========================================
-// Sub-Components (Extracted for Readability)
+// Sub-Components
 // ==========================================
 
 function UserStatsGrid({ userStats, managedUsers }) {
@@ -250,23 +262,25 @@ function UserStatsGrid({ userStats, managedUsers }) {
     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
       <StatCard
         title="Total Users"
-        value={userStats.surveyors + userStats.koordinators}
+        value={managedUsers.length}
         icon={Users}
-        description="Koordinator & Surveyor"
+        description="Active System Users"
         variant="primary"
       />
       <StatCard
         title="Surveyors"
         value={userStats.surveyors}
         icon={UserCheck}
-        description={`${managedUsers.filter(u => u.role === 'surveyor' && u.isActive).length} active`}
+        // Update: u.is_active
+        description={`${managedUsers.filter(u => u.role_code === 'surveyor' && u.is_active).length} active`}
         variant="success"
       />
       <StatCard
         title="Koordinators"
         value={userStats.koordinators}
         icon={UserCog}
-        description={`${managedUsers.filter(u => u.role === 'koordinator' && u.isActive).length} active`}
+        // Update: u.is_active
+        description={`${managedUsers.filter(u => u.role_code === 'koordinator' && u.is_active).length} active`}
         variant="warning"
       />
     </div>
@@ -312,7 +326,7 @@ function UserFilterBar({ searchTerm, setSearchTerm, roleFilter, setRoleFilter, s
   );
 }
 
-function UsersTable({ users, onEdit, onReset, onDeactivate, onDelete }) {
+function UsersTable({ users, currentUserId, onEdit, onReset, onToggleStatus, onDelete }) {
   return (
     <div className="table-container">
       <Table>
@@ -339,25 +353,29 @@ function UsersTable({ users, onEdit, onReset, onDeactivate, onDelete }) {
                 <TableCell className="font-medium">{user.name}</TableCell>
                 <TableCell className="text-muted-foreground">{user.email}</TableCell>
                 <TableCell>
-                  <Badge variant={ROLE_COLORS[user.role] ?? 'default'} className="capitalize">
-                    {user.role}
+                  {/* Update: user.role_code & user.role_label */}
+                  <Badge variant={ROLE_COLORS[user.role_code] ?? 'default'} className="capitalize">
+                    {user.role_label}
                   </Badge>
                 </TableCell>
                 <TableCell>
+                  {/* Update: user.is_active */}
                   <Badge
-                    variant={user.isActive ? 'success' : 'secondary'}
-                    className={user.isActive ? 'hover:bg-primary hover:text-primary-foreground focus:ring-primary' : ''}
+                    variant={user.is_active ? 'success' : 'secondary'}
+                    className={user.is_active ? 'hover:bg-primary hover:text-primary-foreground focus:ring-primary' : ''}
                   >
-                    {user.isActive ? 'Active' : 'Inactive'}
+                    {user.is_active ? 'Active' : 'Inactive'}
                   </Badge>
                 </TableCell>
-                <TableCell className="text-muted-foreground text-sm">{user.createdAt}</TableCell>
+                {/* Update: user.created_at */}
+                <TableCell className="text-muted-foreground text-sm">{user.created_at}</TableCell>
                 <TableCell className="text-right">
                   <UserRowActions
                     user={user}
+                    isSelf={user.id === currentUserId}
                     onEdit={onEdit}
                     onReset={onReset}
-                    onDeactivate={onDeactivate}
+                    onToggleStatus={onToggleStatus}
                     onDelete={onDelete}
                   />
                 </TableCell>
@@ -370,7 +388,7 @@ function UsersTable({ users, onEdit, onReset, onDeactivate, onDelete }) {
   );
 }
 
-function UserRowActions({ user, onEdit, onReset, onDeactivate, onDelete }) {
+function UserRowActions({ user, isSelf, onEdit, onReset, onToggleStatus, onDelete }) {
   return (
     <div className="flex items-center justify-end gap-2">
       <Button
@@ -381,6 +399,7 @@ function UserRowActions({ user, onEdit, onReset, onDeactivate, onDelete }) {
       >
         <Edit2 className="h-3.5 w-3.5 mr-1.5" /> Edit
       </Button>
+
       <Button
         variant="outline"
         size="sm"
@@ -389,30 +408,37 @@ function UserRowActions({ user, onEdit, onReset, onDeactivate, onDelete }) {
       >
         <RotateCcw className="h-3.5 w-3.5 mr-1.5" /> Reset
       </Button>
-      <Button
-        variant="outline"
-        size="sm"
-        className={`h-8 px-2 border transition-colors ${
-          user.isActive
-            ? "border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100 hover:text-amber-800 hover:border-amber-300 dark:bg-amber-950/30 dark:text-amber-400 dark:border-amber-800"
-            : "border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 hover:text-emerald-800 hover:border-emerald-300 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-800"
-        }`}
-        onClick={() => onDeactivate({ open: true, user })}
-      >
-        {user.isActive ? (
-          <><Power className="h-3.5 w-3.5 mr-1.5" /> Deactivate</>
-        ) : (
-          <><Power className="h-3.5 w-3.5 mr-1.5" /> Activate</>
-        )}
-      </Button>
-      <Button
-        variant="destructive"
-        size="sm"
-        className="h-8 px-2 shadow-sm bg-red-600 hover:bg-red-700"
-        onClick={() => onDelete({ open: true, user })}
-      >
-        <Trash2 className="h-3.5 w-3.5 mr-1.5" /> Delete
-      </Button>
+
+      {/* Hide Toggle & Delete for Self */}
+      {!isSelf && (
+        <>
+          <Button
+            variant="outline"
+            size="sm"
+            className={`h-8 px-2 border transition-colors ${
+              user.is_active
+                ? "border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100 hover:text-amber-800 hover:border-amber-300 dark:bg-amber-950/30 dark:text-amber-400 dark:border-amber-800"
+                : "border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 hover:text-emerald-800 hover:border-emerald-300 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-800"
+            }`}
+            onClick={() => onToggleStatus({ open: true, user })}
+          >
+            {user.is_active ? (
+              <><Power className="h-3.5 w-3.5 mr-1.5" /> Deactivate</>
+            ) : (
+              <><Power className="h-3.5 w-3.5 mr-1.5" /> Activate</>
+            )}
+          </Button>
+
+          <Button
+            variant="destructive"
+            size="sm"
+            className="h-8 px-2 shadow-sm bg-red-600 hover:bg-red-700"
+            onClick={() => onDelete({ open: true, user })}
+          >
+            <Trash2 className="h-3.5 w-3.5 mr-1.5" /> Delete
+          </Button>
+        </>
+      )}
     </div>
   );
 }
@@ -468,14 +494,16 @@ function CreateUserDialog({ open, onOpenChange, form, onSubmit }) {
                 <ClipboardList className="h-4 w-4 text-indigo-500" /> Role Assignment <span className="text-destructive text-xs">*</span>
               </h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {/* ID 3 = Surveyor (Sesuai Seeder Baru) */}
                 <RoleSelectionCard
-                  roleId="1"
+                  roleId="3"
                   currentRole={form.data.role_id}
                   setRole={(val) => form.setData('role_id', val)}
                   label="Surveyor"
                   desc="Field data collection only."
                   icon={ClipboardList} color="blue"
                 />
+                {/* ID 2 = Koordinator (Sesuai Seeder Baru) */}
                 <RoleSelectionCard
                   roleId="2"
                   currentRole={form.data.role_id}
@@ -500,7 +528,13 @@ function CreateUserDialog({ open, onOpenChange, form, onSubmit }) {
                   <div className="absolute left-3 top-2.5 text-muted-foreground group-focus-within:text-emerald-600 transition-colors pointer-events-none"><KeyRound className="h-4 w-4" /></div>
                   <Input type="password" placeholder="Min. 8 characters" value={form.data.password} onChange={(e) => form.setData('password', e.target.value)} className={`pl-9 h-10 ${form.errors.password ? 'border-destructive ring-destructive/20' : 'focus-visible:ring-emerald-500 focus-visible:border-emerald-500'}`} />
                 </div>
-                <div className="flex items-start gap-2 p-3 rounded-md bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800">
+                {/* Added Confirm Password Field for Safety */}
+                 <div className="mt-2 relative group">
+                  <div className="absolute left-3 top-2.5 text-muted-foreground group-focus-within:text-emerald-600 transition-colors pointer-events-none"><KeyRound className="h-4 w-4" /></div>
+                  <Input type="password" placeholder="Confirm Password" value={form.data.password_confirmation} onChange={(e) => form.setData('password_confirmation', e.target.value)} className="pl-9 h-10" />
+                </div>
+
+                <div className="flex items-start gap-2 p-3 rounded-md bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800 mt-2">
                   <Lock className="h-3.5 w-3.5 text-slate-400 mt-0.5 shrink-0" />
                   <p className="text-xs text-muted-foreground leading-relaxed">The user will be required to change this password immediately upon their first successful login.</p>
                 </div>
@@ -562,12 +596,13 @@ function EditUserDialog({ open, onOpenChange, form, onSubmit }) {
               <Label className="text-xs font-semibold uppercase text-muted-foreground flex items-center justify-between">
                 Assigned Role <span className="text-destructive">*</span>
                 <span className="text-[10px] font-normal normal-case text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full">
-                  {form.data.role_id === '1' ? 'Surveyor Selected' : form.data.role_id === '2' ? 'Koordinator Selected' : 'No role selected'}
+                  {/* ID Sesuai Seeder Baru */}
+                  {form.data.role_id === '3' ? 'Surveyor Selected' : form.data.role_id === '2' ? 'Koordinator Selected' : 'No role selected'}
                 </span>
               </Label>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <RoleSelectionCard
-                  roleId="1" currentRole={form.data.role_id} setRole={(val) => form.setData('role_id', val)}
+                  roleId="3" currentRole={form.data.role_id} setRole={(val) => form.setData('role_id', val)}
                   label="Surveyor" desc="Responsible for field data collection." icon={ClipboardList} color="blue"
                 />
                 <RoleSelectionCard
@@ -577,6 +612,16 @@ function EditUserDialog({ open, onOpenChange, form, onSubmit }) {
               </div>
               {form.errors.role_id && <p className="text-xs text-destructive mt-2 flex items-center gap-1"><span className="inline-block w-1 h-1 rounded-full bg-destructive"></span>{form.errors.role_id}</p>}
             </div>
+
+            {/* Optional Password Change during Edit */}
+             <div className="pt-2 border-t mt-4">
+               <Label className="text-muted-foreground mb-2 block">Change Password (Optional)</Label>
+               <div className="grid grid-cols-2 gap-4">
+                  <Input type="password" placeholder="New Password" value={form.data.password} onChange={e => form.setData('password', e.target.value)} />
+                  <Input type="password" placeholder="Confirm" value={form.data.password_confirmation} onChange={e => form.setData('password_confirmation', e.target.value)} />
+               </div>
+               {form.errors.password && <p className="text-xs text-red-500 mt-1">{form.errors.password}</p>}
+             </div>
           </div>
           <div className="flex items-center justify-end gap-3 px-6 py-4 bg-muted/30 border-t">
             <Button type="button" variant="ghost" onClick={() => onOpenChange(false)} disabled={form.processing}>Cancel</Button>
@@ -592,20 +637,41 @@ function EditUserDialog({ open, onOpenChange, form, onSubmit }) {
 
 function RoleSelectionCard({ roleId, currentRole, setRole, label, desc, icon: Icon, color }) {
   const isSelected = currentRole === roleId;
-  const borderColor = color === 'blue' ? 'blue' : 'indigo';
 
-  // Tailwind classes logic simplification for brevity
+  const styleConfig = {
+    blue: {
+        cardBorder: 'border-blue-600',
+        cardBg: 'bg-blue-50/40 dark:bg-blue-900/2',
+        iconSelected: 'bg-blue-600 border-blue-600 text-white',
+        title: 'text-blue-700 dark:text-blue-400',
+        checkText: 'text-blue-600',
+        checkFill: 'fill-blue-100',
+    },
+    indigo: {
+        cardBorder: 'border-indigo-600',
+        cardBg: 'bg-indigo-50/40 dark:bg-indigo-900/2',
+        iconSelected: 'bg-indigo-600 border-indigo-600 text-white',
+        title: 'text-indigo-700 dark:text-indigo-400',
+        checkText: 'text-indigo-600',
+        checkFill: 'fill-indigo-100',
+    }
+  };
+
+  const activeStyle = styleConfig[color] || styleConfig.blue;
+
   const cardClasses = `relative cursor-pointer rounded-xl border-2 p-4 transition-all duration-200 hover:shadow-md group ${
     isSelected
-    ? `border-${borderColor}-600 bg-${borderColor}-50/40 dark:bg-${borderColor}-900/20 dark:border-${borderColor}-500`
+    ? `activeStyle.cardBorder + ' ' + activeStyle.cardBg`
     : 'border-muted hover:border-blue-300 hover:bg-slate-50 dark:hover:bg-slate-800'
   }`;
 
   const iconClasses = `mt-1 flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border transition-colors ${
-    isSelected ? `bg-${borderColor}-600 border-${borderColor}-600 text-white` : 'bg-white border-slate-200 text-slate-500'
+    isSelected
+    ? activeStyle.iconSelected
+    : 'bg-white border-slate-200 text-slate-500'
   }`;
 
-  const titleClasses = `font-semibold text-sm ${isSelected ? `text-${borderColor}-700 dark:text-${borderColor}-400` : 'text-foreground'}`;
+  const titleClasses = `font-semibold text-sm ${isSelected ? activeStyle.title : 'text-foreground'}`;
 
   return (
     <div onClick={() => setRole(roleId)} className={cardClasses}>
@@ -617,8 +683,8 @@ function RoleSelectionCard({ roleId, currentRole, setRole, label, desc, icon: Ic
         </div>
       </div>
       {isSelected && (
-        <div className={`absolute top-3 right-3 text-${borderColor}-600 animate-in fade-in zoom-in duration-300`}>
-          <CheckCircle2 className={`h-5 w-5 fill-${borderColor}-100`} />
+        <div className={`absolute top-3 right-3 ${activeStyle.checkText} animate-in fade-in zoom-in duration-300`}>
+          <CheckCircle2 className={`h-5 w-5 ${activeStyle.checkFill}`} />
         </div>
       )}
     </div>
@@ -677,30 +743,33 @@ function ResetPasswordDialog({ dialog, setDialog, isLoading, onConfirm }) {
 }
 
 function StatusConfirmDialog({ dialog, setDialog, isLoading, onConfirm }) {
+  // Update: Menggunakan is_active
+  const isActive = dialog.user?.is_active;
+
   return (
     <ConfirmDialog
       open={dialog.open}
       onOpenChange={(open) => !isLoading && setDialog({ open, user: dialog.user })}
       title={
         <div className="flex items-center gap-3 pb-1">
-          {dialog.user?.isActive ? (
+          {isActive ? (
             <div className="p-2 bg-red-100 rounded-full"><AlertTriangle className="h-5 w-5 text-red-600" /></div>
           ) : (
             <div className="p-2 bg-blue-100 rounded-full"><Power className="h-5 w-5 text-blue-600" /></div>
           )}
-          <span className={dialog.user?.isActive ? "text-red-700" : "text-blue-700"}>{dialog.user?.isActive ? 'Deactivate Access' : 'Restore Access'}</span>
+          <span className={isActive ? "text-red-700" : "text-blue-700"}>{isActive ? 'Deactivate Access' : 'Restore Access'}</span>
         </div>
       }
       description={
         <div className="flex flex-col gap-3 pt-2 text-sm text-muted-foreground">
           <p>Are you sure you want to change the status for user <span className="font-semibold text-foreground text-base">{dialog.user?.name}</span>?</p>
-          <div className={`p-3 rounded-md border text-xs flex gap-2 items-start ${dialog.user?.isActive ? 'bg-red-50 border-red-100 text-red-800' : 'bg-blue-50 border-blue-100 text-blue-800'}`}>
+          <div className={`p-3 rounded-md border text-xs flex gap-2 items-start ${isActive ? 'bg-red-50 border-red-100 text-red-800' : 'bg-blue-50 border-blue-100 text-blue-800'}`}>
             <span className="mt-0.5 font-bold">Note:</span>
-            <span>{dialog.user?.isActive ? "User will immediately lose access to the dashboard." : "User will regain full access to the system immediately."}</span>
+            <span>{isActive ? "User will immediately lose access to the dashboard." : "User will regain full access to the system immediately."}</span>
           </div>
         </div>
       }
-      confirmLabel={isLoading ? <div className="flex items-center gap-2"><Loader2 className="h-4 w-4 animate-spin" /><span>Processing...</span></div> : (dialog.user?.isActive ? 'Yes, Deactivate' : 'Yes, Activate')}
+      confirmLabel={isLoading ? <div className="flex items-center gap-2"><Loader2 className="h-4 w-4 animate-spin" /><span>Processing...</span></div> : (isActive ? 'Yes, Deactivate' : 'Yes, Activate')}
       disabled={isLoading}
       onConfirm={(e) => {
         if (e?.preventDefault) e.preventDefault();
@@ -718,20 +787,27 @@ function DeleteConfirmDialog({ dialog, setDialog, isLoading, onConfirm }) {
       onOpenChange={(open) => !isLoading && setDialog({ open, user: dialog.user })}
       title={
         <div className="flex items-center gap-3 pb-1">
-          <div className="p-2 bg-red-100 rounded-full"><Trash2 className="h-5 w-5 text-red-600"/></div>
+          <div className="p-2 bg-red-100 rounded-full"><ShieldAlert className="h-5 w-5 text-red-600"/></div>
           <span className="text-red-700">Delete User Account</span>
         </div>
       }
       description={
         <div className="flex flex-col gap-3 pt-2 text-sm text-muted-foreground">
           <p>Are you sure you want to delete user <span className="font-semibold text-foreground text-base">{dialog.user?.name}</span>?</p>
+          {/* Update: Penjelasan tentang Logical Guard */}
           <div className="p-3 rounded-md border border-red-100 bg-red-50 text-xs flex gap-2 items-start text-red-800">
-            <span className="mt-0.5 font-bold">Warning:</span>
-            <span>This action will perform a <strong>Soft Delete</strong>. The user will vanish from this list, but historical data (interviews) remain safe in the database.</span>
+            <span className="mt-0.5 font-bold">WARNING:</span>
+            <span>
+              This is a <strong>Permanent Delete</strong>.
+              <ul className="list-disc pl-4 mt-1">
+                <li>If the user has <strong>Parcel Data</strong>, the system will BLOCK this action to preserve history.</li>
+                <li>If the user is empty, they will be removed forever.</li>
+              </ul>
+            </span>
           </div>
         </div>
       }
-      confirmLabel={isLoading ? <div className="flex items-center gap-2"><Loader2 className="h-4 w-4 animate-spin" /><span>Deleting...</span></div> : 'Yes, Delete User'}
+      confirmLabel={isLoading ? <div className="flex items-center gap-2"><Loader2 className="h-4 w-4 animate-spin" /><span>Deleting...</span></div> : 'Yes, Delete Permanently'}
       cancelLabel="Cancel"
       variant="destructive"
       disabled={isLoading}

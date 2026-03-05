@@ -1,29 +1,19 @@
 import { useState } from 'react';
 import { Link, usePage, router } from '@inertiajs/react';
 import {
-    LayoutDashboard,
-    FileText,
-    FilePlus,
-    Users,
-    ClipboardCheck,
-    FileCheck,
-    ScrollText,
-    ChevronLeft,
-    LogOut,
-    Loader2,
-    Settings,
-    Bell,
+    LayoutDashboard, FileText, FilePlus, Users, ClipboardCheck,
+    FileCheck, ScrollText, ChevronLeft, LogOut, Loader2,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 /* =========================
-   MENU CONFIG
+    MENU CONFIG
 ========================= */
 const menuItems = {
     surveyor: [
         { label: 'Dashboard', icon: LayoutDashboard, path: '/surveyor/dashboard' },
-        { label: 'Create Interview', icon: FilePlus, path: '/interviews/create' },
-        { label: 'My Interviews', icon: FileText, path: '/interviews' },
+        { label: 'Create Interview', icon: FilePlus, path: '/surveyor/interviews/create' },
+        { label: 'My Interviews', icon: FileText, path: '/surveyor/interviews', exact: true },
     ],
     koordinator: [
         { label: 'Dashboard', icon: LayoutDashboard, path: '/koordinator/dashboard' },
@@ -146,33 +136,52 @@ export function Sidebar() {
 }
 
 /* =========================
-   SIDEBAR ITEM
+   SIDEBAR ITEM (FINAL FIX)
 ========================= */
 function SidebarItem({ item, currentUrl, collapsed }) {
-  const Icon = item.icon;
-  const path = currentUrl.split('?')[0];
+    const Icon = item.icon;
+    const path = currentUrl.split('?')[0];
 
-  const isDashboard = item.path.endsWith('/dashboard');
+    // Logika yang lebih aman untuk rute Laravel
+    const isDashboard = item.path.endsWith('/dashboard');
+    const isCreatePage = path.includes('/interviews/create');
+    const isMyInterviewsMenu = item.path === '/surveyor/interviews';
 
-  const active = isDashboard
-    ? path === item.path
-    : path === item.path || path.startsWith(item.path + '/');
+    let active = false;
 
-  return (
-    <Link
-      href={item.path}
-      className={cn(
-        'group relative flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition',
-        collapsed && 'justify-center px-3',
-        active
-          ? 'bg-blue-600 text-white shadow'
-          : 'text-slate-700 hover:bg-slate-100'
-      )}
-    >
-      <Icon className="h-5 w-5" />
-      {!collapsed && <span>{item.label}</span>}
-    </Link>
-  );
+    if (isDashboard) {
+        active = path === item.path;
+    } else if (path === item.path) {
+        active = true;
+    } else if (path.startsWith(item.path + '/')) {
+        // Jika sedang di halaman CREATE, menu My Interviews harus MATI
+        if (isCreatePage && isMyInterviewsMenu) {
+            active = false;
+        } else {
+            active = true; // Ini mencakup /edit, /show, dll
+        }
+    }
+
+    // 3. Pengecualian Dashboard (Selalu Exact Match)
+    if (item.path.endsWith('/dashboard')) {
+        active = path === item.path;
+    }
+
+    return (
+        <Link
+        href={item.path}
+        className={cn(
+            'group relative flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition',
+            collapsed && 'justify-center px-3',
+            active
+            ? 'bg-blue-600 text-white shadow'
+            : 'text-slate-700 hover:bg-slate-100'
+        )}
+        >
+        <Icon className="h-5 w-5" />
+        {!collapsed && <span>{item.label}</span>}
+        </Link>
+    );
 }
 
 

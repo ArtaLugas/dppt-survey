@@ -148,18 +148,14 @@ img {
 }
 
 .inner-body {
-    -premailer-cellpadding: 0;
-    -premailer-cellspacing: 0;
     -premailer-width: 600px;
     background-color: #ffffff;
-    border-color: #e2e8f0;
-    border-radius: 12px;
-    border-width: 1px;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05), 0 10px 20px rgba(0, 0, 0, 0.03);
+    border: 1px solid #e2e8f0;
+    border-radius: 16px; /* Lebih melengkung agar modern */
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
     margin: 0 auto;
     padding: 0;
     width: 600px;
-    overflow: hidden;
 }
 
 /* Subcopy */
@@ -182,29 +178,43 @@ img {
 /* Footer */
 
 .footer {
-    -premailer-cellpadding: 0;
-    -premailer-cellspacing: 0;
     -premailer-width: 600px;
     margin: 0 auto;
-    padding: 0;
+    padding: 32px 0; /* Memberikan nafas pada bagian bawah */
     text-align: center;
     width: 600px;
 }
 
+.footer-content {
+    padding: 0 40px;
+}
+
 .footer p {
     color: #94a3b8;
-    font-size: 12px;
+    font-size: 13px;
+    line-height: 1.8;
     text-align: center;
-    line-height: 1.6;
+    margin-bottom: 8px;
+}
+
+.footer-links {
+    margin-bottom: 16px;
 }
 
 .footer a {
     color: #64748b;
-    text-decoration: none;
+    font-weight: 500;
+    margin: 0 10px;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
 }
 
-.footer a:hover {
-    color: #006CCD;
+.footer-address {
+    font-style: normal;
+    color: #cbd5e1;
+    font-size: 11px;
+    margin-top: 16px;
 }
 
 /* Tables */
@@ -279,11 +289,16 @@ img {
 
 .button-blue,
 .button-primary {
-    background: linear-gradient(135deg, #263592 0%, #006CCD 100%);
-    border-bottom: 10px solid #263592;
-    border-left: 24px solid #263592;
-    border-right: 24px solid #263592;
-    border-top: 10px solid #263592;
+    background: #263592 !important; /* Solid Navy untuk kesan Otoritas */
+    background: linear-gradient(135deg, #263592 0%, #006CCD 100%) !important;
+    border-top: 12px solid #263592 !important;
+    border-bottom: 12px solid #263592 !important;
+    border-left: 32px solid #263592 !important;
+    border-right: 32px solid #263592 !important;
+    border-radius: 8px !important;
+    text-transform: uppercase;
+    font-size: 14px !important;
+    letter-spacing: 1px !important;
 }
 
 .button-green,
@@ -323,9 +338,9 @@ img {
 }
 
 .panel-content {
-    background-color: #f8fafc;
-    color: #475569;
-    padding: 20px;
+    background-color: #f1f5f9;
+    border-radius: 8px;
+    border-left: 4px solid #263592;
 }
 
 .panel-content p {

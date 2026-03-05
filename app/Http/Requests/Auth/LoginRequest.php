@@ -2,11 +2,12 @@
 
 namespace App\Http\Requests\Auth;
 
-use Illuminate\Auth\Events\Lockout;
-use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\RateLimiter;
+use App\Models\User;
 use Illuminate\Support\Str;
+use Illuminate\Auth\Events\Lockout;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Validation\ValidationException;
 
 class LoginRequest extends FormRequest
@@ -41,9 +42,27 @@ class LoginRequest extends FormRequest
     {
         $this->ensureIsNotRateLimited();
 
-        if (! Auth::attempt($this->only('email', 'password'), $this->boolean('remember'))) {
+        // 1. Take input from form
+        $credentials = $this->only('email', 'password');
+
+        // 2. Strategically inject the mandatory active account status
+        $credentials['is_active'] = true;
+
+        // 3. Attempt to authenticate
+        if (! Auth::attempt($credentials, $this->boolean('remember_me'))) {
             RateLimiter::hit($this->throttleKey());
 
+            // 4. Analyze the failure cause (diagnostic logic)
+            $user = User::where('email', $this->email)->first();
+
+            // If the user exists, the password might be correct or incorrect, but the account is inactive.
+            if ($user && ! $user->is_active) {
+                throw ValidationException::withMessages([
+                    'email' => 'Access denied: Your account has been deactivated by an Administrator.',
+                ]);
+            }
+
+            // If the email or password is incorrect
             throw ValidationException::withMessages([
                 'email' => trans('auth.failed'),
             ]);

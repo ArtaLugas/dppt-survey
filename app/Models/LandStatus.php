@@ -7,5 +7,5 @@ use Illuminate\Database\Eloquent\Model;
 class LandStatus extends Model
 {
     public $timestamps = false;
-    protected $fillable = ['code'];
+    protected $fillable = ['code', 'label'];
 }

@@ -6,7 +6,6 @@ use Illuminate\Database\Eloquent\Model;
 
 class PhotoType extends Model
 {
-
     public $timestamps = false;
-    protected $fillable = ['code'];
+    protected $fillable = ['code', 'min_qty', 'label'];
 }

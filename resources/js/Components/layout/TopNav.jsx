@@ -12,9 +12,9 @@ export function TopNav({}) { // Menerima props 'title' (opsional)
     const user = page.props.auth?.user;
 
     const dashboardTitles = {
-        1: 'Surveyor Dashboard',
+        1: 'Admin Dashboard',
         2: 'Koordinator Dashboard',
-        3: 'Admin Dashboard',
+        3: 'Surveyor Dashboard',
     };
 
     if (!user) return null;

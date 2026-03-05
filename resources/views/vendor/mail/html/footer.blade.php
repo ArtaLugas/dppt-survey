@@ -1,19 +1,33 @@
-<tr>
-<td>
-<table class="footer" align="center" width="570" cellpadding="0" cellspacing="0" role="presentation">
-<tr>
-<td class="content-cell" align="center">
+@props(['footer_links' => [
+    'Help' => 'https://equatorgroup.id/',
+    'Privacy' => 'https://equatorgroup.id/',
+    'Terms & Conditions' => 'https://equatorgroup.id/',
+]])
 
-<table align="center" width="100%" cellpadding="0" cellspacing="0"
-       style="margin-top: 35px; padding-top: 25px; border-top: 1px solid #e5e7eb;">
 <tr>
-<td align="center">
-    <p style="font-size: 16px; font-weight: 700; color: #263592; margin: 0 0 10px;">
-        EQUATOR GROUP
-    </p>
+    <td>
+        <table class="footer" align="center" width="570" cellpadding="0" cellspacing="0" role="presentation">
+            <tr>
+                <td class="content-cell" align="center">
+                    <div class="footer-content">
+                        <div class="footer-links">
+                            @foreach($footer_links as $label => $link)
+                                <a href="{{ $link }}">{{ $label }}</a>
+                            @endforeach
+                        </div>
 
-    <p style="font-size: 12px; color: #6b7280; margin: 0 0 12px;">
-        <a href="mailto:office@equatorgroup.id" style="color: #006CCD; text-decoration: none;">
-            office@equatorgroup.id
-        </a>
-        <span style="margin: 0 8px;
+                        <p>
+                            &copy; {{ date('Y') }} <strong>Equator Group</strong>. All rights reserved.
+                        </p>
+
+                        <p class="footer-address">
+                            Jakarta, Indonesia<br>
+                            This email was sent automatically by our system.
+                        </p>
+                    </div>
+                </td>
+            </tr>
+        </table>
+    </td>
+</tr>
+

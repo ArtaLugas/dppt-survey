@@ -8,5 +8,5 @@ class RespondentRole extends Model
 {
 
     public $timestamps = false;
-    protected $fillable = ['code'];
+    protected $fillable = ['code', 'label'];
 }

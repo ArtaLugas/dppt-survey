@@ -22,6 +22,7 @@ class ParcelStatusSeeder extends Seeder
 
             // --- STATUS BARU UNTUK JEJAK AUDIT ---
             ['id' => 5, 'code' => 'cancelled', 'label' => 'Cancelled (Dibatalkan)'],
+            ['id' => 6, 'code' => 'revision', 'label' => 'Butuh Revisi Koordinator'],
         ];
 
         // 2. Eksekusi penyimpanan (Aman dari duplikasi)

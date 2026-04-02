@@ -28,9 +28,6 @@ export const parcelInfoSchema = z.object({
 });
 
 export function ParcelInfoTab({ parcel, accessState, onSave, isLoading }) {
-
-    const storageKey = `draft_parcel_info${parcel?.id || 'new'}`;
-
     const dbValues = {
         nomorPetaIndex: parcel?.nomor_peta_index || '',
         nomorBidang: parcel?.nomor_bidang || '',
@@ -41,48 +38,15 @@ export function ParcelInfoTab({ parcel, accessState, onSave, isLoading }) {
     };
 
     let initialValues = dbValues;
-    let hasDraft = false;
-
-    if (typeof window !== 'undefined') {
-        try {
-        const saved = window.localStorage.getItem(storageKey);
-        if (saved) {
-            const parsed = JSON.parse(saved);
-            // Bandingkan: Jika draf lokal berbeda dengan data asli server, gunakan draf lokal!
-            if (JSON.stringify(parsed) !== JSON.stringify(dbValues)) {
-            initialValues = parsed;
-            hasDraft = true;
-            }
-        }
-        } catch (e) {
-        console.warn("Gagal membaca local storage", e);
-        }
-    }
-
-    const [showDraftAlert, setShowDraftAlert] = useState(hasDraft);
 
     const form = useForm({
         resolver: zodResolver(parcelInfoSchema),
         defaultValues: initialValues,
     });
 
-    useEffect(() => {
-        const subscription = form.watch((value) => {
-            const timeoutId = setTimeout(() => {
-                window.localStorage.setItem(storageKey, JSON.stringify(value));
-            }, 1000);
-
-            return () => clearTimeout(timeoutId);
-        });
-
-        return () => subscription.unsubscribe();
-    }, [form.watch, storageKey]);
-
     const onSubmitForm = (data) => {
         onSave(data, {
             onSuccess: () => {
-                window.localStorage.removeItem(storageKey);
-                setShowDraftAlert(false);
                 form.reset(data);
             }
         });
@@ -100,19 +64,6 @@ export function ParcelInfoTab({ parcel, accessState, onSave, isLoading }) {
             <div className="ml-2">
                 <AlertTitle className="font-bold">Informasi Akses</AlertTitle>
                 <AlertDescription className="font-medium mt-1">{accessState.message}</AlertDescription>
-            </div>
-            </Alert>
-        )}
-
-        {/* --- ALERT DRAF LOKAL --- */}
-        {showDraftAlert && !accessState.isFinal && (
-            <Alert className="rounded-2xl border-2 bg-amber-50 border-amber-200 text-amber-800">
-            <AlertTriangle className="h-5 w-5 text-amber-600" />
-            <div className="ml-2">
-                <AlertTitle className="font-bold">Memulihkan Data yang Belum Tersimpan!</AlertTitle>
-                <AlertDescription className="font-medium mt-1 text-sm">
-                Sistem menemukan ketikan terakhir Anda yang gagal terkirim ke server (mungkin karena sinyal terputus). Pastikan data sudah benar, lalu klik Simpan.
-                </AlertDescription>
             </div>
             </Alert>
         )}
@@ -297,7 +248,7 @@ export function ParcelInfoTab({ parcel, accessState, onSave, isLoading }) {
                     </span>
                     <Button
                     type="submit"
-                    disabled={isLoading || (!form.formState.isDirty && !showDraftAlert)}
+                    disabled={isLoading || !form.formState.isDirty}
                     className="rounded-full h-12 px-8 font-bold shadow-lg shadow-primary/20 transition-all hover:scale-105"
                     >
                     {isLoading ? (

@@ -78,9 +78,6 @@ const QtyInput = ({ field, disabled, className }) => (
 // KOMPONEN UTAMA DIALOG
 // =====================================================================
 export function InventoryItemDialog({ open, onOpenChange, parcelId, item, defaultCategory, onSubmit, isProcessing }) {
-  // 1. Kunci Brankas (Membedakan Item Baru dan Edit)
-  const storageKey = `draft_inventory_${parcelId || 'new'}_${item?.id || 'new'}`;
-  const [showDraftAlert, setShowDraftAlert] = useState(false);
 
   const form = useForm({
     resolver: zodResolver(formSchema),
@@ -115,22 +112,7 @@ export function InventoryItemDialog({ open, onOpenChange, parcelId, item, defaul
       };
 
       let initialValues = { ...dbValues };
-      let hasDraft = false;
 
-      try {
-        const saved = window.localStorage.getItem(storageKey);
-        if (saved) {
-          const parsed = JSON.parse(saved);
-          if (JSON.stringify(parsed) !== JSON.stringify(dbValues)) {
-            initialValues = parsed;
-            hasDraft = true;
-          }
-        }
-      } catch (e) {
-        console.warn('Gagal membaca draf lokal inventaris', e);
-      }
-
-      setShowDraftAlert(hasDraft);
       form.reset(initialValues);
     } else {
       // Saat dialog tertutup, reset form ke kondisi awal (kosong)
@@ -140,29 +122,15 @@ export function InventoryItemDialog({ open, onOpenChange, parcelId, item, defaul
         satuan: defaultCategory === 'TANAMAN' ? 'Batang' : (defaultCategory === 'BANGUNAN' ? 'm²' : 'Unit'),
         kondisi: 'Baik', keterangan: '',
       });
-      setShowDraftAlert(false);
     }
-  }, [item, form, open, defaultCategory, storageKey]);
+  }, [item, form, open, defaultCategory]);
 
-  // 3. ENGINE AUTO-SAVE
-  useEffect(() => {
-    if (!open) return;
-    const subscription = form.watch((value) => {
-      const timeoutId = setTimeout(() => {
-        window.localStorage.setItem(storageKey, JSON.stringify(value));
-      }, 500);
-      return () => clearTimeout(timeoutId);
-    });
-    return () => subscription.unsubscribe();
-  }, [form.watch, open, storageKey]);
+
 
   // 4. INTERSEPTOR SUBMIT
   const handleFormSubmit = (values) => {
     onSubmit(values, {
       onSuccess: () => {
-        // Hapus draf hanya jika simpan berhasil
-        window.localStorage.removeItem(storageKey);
-        setShowDraftAlert(false);
         onOpenChange(false);
       }
     });
@@ -190,18 +158,7 @@ export function InventoryItemDialog({ open, onOpenChange, parcelId, item, defaul
         {/* --- ROW 2: FORM BODY (Scrollable Area) --- */}
         <div className="flex-1 min-h-0 overflow-y-auto p-6 md:p-8 space-y-6">
 
-          {/* ALERT DRAF LOKAL */}
-          {showDraftAlert && (
-            <Alert className="rounded-2xl border-2 bg-amber-50 border-amber-200 text-amber-800 shadow-sm animate-in slide-in-from-top-2">
-              <AlertTriangle className="h-5 w-5 text-amber-600" />
-              <div className="ml-2">
-                <AlertTitle className="font-bold">Memulihkan Data yang Belum Tersimpan!</AlertTitle>
-                <AlertDescription className="font-medium mt-1 text-sm">
-                  Ketikan terakhir Anda pada aset ini berhasil dikembalikan. Silakan periksa dan klik Simpan.
-                </AlertDescription>
-              </div>
-            </Alert>
-          )}
+
 
           <Form {...form}>
             <form id="inventory-item-form" onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-8">

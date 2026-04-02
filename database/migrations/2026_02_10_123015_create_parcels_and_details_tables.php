@@ -34,6 +34,7 @@ return new class extends Migration
 
 
             $table->timestamp('verified_at')->nullable();
+            $table->text('catatan_revisi')->nullable();
 
             $table->timestamps();
         });

@@ -90,10 +90,7 @@ const AreaInput = ({ field, disabled, className, readOnly }) => (
 // =====================================================================
 // KOMPONEN UTAMA DIALOG
 // =====================================================================
-// PERBAIKAN: Menambahkan parcelId sebagai prop wajib!
 export function LandDetailDialog({ open, onOpenChange, parcelId, landDetail, onSubmit, isProcessing }) {
-  const [showDraftAlert, setShowDraftAlert] = useState(false);
-  const storageKey = `draft_land_detail_${parcelId || 'new'}`;
 
   const form = useForm({
     resolver: zodResolver(formSchema),
@@ -141,24 +138,7 @@ export function LandDetailDialog({ open, onOpenChange, parcelId, landDetail, onS
       };
 
       let initialValues = { ...dbValues };
-      let hasDraft = false;
 
-      // 2. Cek Brankas LocalStorage
-      try {
-        const saved = window.localStorage.getItem(storageKey);
-        if (saved) {
-          const parsed = JSON.parse(saved);
-          // Jika isi brankas berbeda dengan database, berarti ada ketikan yang nyangkut
-          if (JSON.stringify(parsed) !== JSON.stringify(dbValues)) {
-            initialValues = parsed;
-            hasDraft = true;
-          }
-        }
-      } catch (e) {
-        console.warn('Gagal membaca draf lokal', e);
-      }
-
-      setShowDraftAlert(hasDraft);
       form.reset(initialValues);
 
     } else {
@@ -168,28 +148,13 @@ export function LandDetailDialog({ open, onOpenChange, parcelId, landDetail, onS
         luas_surat: 0, luas_ukur: 0, luas_terdampak: 0, luas_sisa: 0,
         letak_tanah: '', ruang_atas_bawah_tanah: 'Bebas', pembebanan_hak: 'Bersih', perkiraan_dampak: 'Sebagian',
       });
-      setShowDraftAlert(false);
     }
-  }, [open, landDetail, form, storageKey]);
+  }, [open, landDetail, form]);
 
-  // --- ENGINE AUTO-SAVE ---
-  useEffect(() => {
-    if (!open) return;
 
-    const subscription = form.watch((value) => {
-      const timeoutId = setTimeout(() => {
-        window.localStorage.setItem(storageKey, JSON.stringify(value));
-      }, 1000);
-      return () => clearTimeout(timeoutId);
-    });
-    return () => subscription.unsubscribe();
-  }, [form.watch, open, storageKey]);
 
   // --- INTERSEPTOR SUBMIT ---
   const handleFormSubmit = (values) => {
-    // Karena surveyor sukses menekan "Simpan", buang brankasnya
-    window.localStorage.removeItem(storageKey);
-    setShowDraftAlert(false);
     onSubmit(values); // Lanjutkan ke parent (yang akan menembak ke API Laravel)
   };
 
@@ -215,18 +180,7 @@ export function LandDetailDialog({ open, onOpenChange, parcelId, landDetail, onS
                 {/* --- ROW 2: FORM BODY (Scrollable Area) --- */}
                 <div className="flex-1 min-h-0 overflow-y-auto p-6 md:p-8 space-y-6">
 
-                    {/* ALERT DRAF LOKAL */}
-                    {showDraftAlert && (
-                        <Alert className="rounded-2xl border-2 bg-amber-50 border-amber-200 text-amber-800 shadow-sm animate-in slide-in-from-top-2">
-                            <AlertTriangle className="h-5 w-5 text-amber-600" />
-                            <div className="ml-2">
-                                <AlertTitle className="font-bold">Memulihkan Data yang Belum Tersimpan!</AlertTitle>
-                                <AlertDescription className="font-medium mt-1 text-sm">
-                                Sistem menemukan ketikan Anda yang gagal terkirim sebelumnya (kemungkinan terputus). Silakan periksa kembali dan klik Simpan.
-                                </AlertDescription>
-                            </div>
-                        </Alert>
-                    )}
+
 
                     <Form {...form}>
                         <form id="land-detail-form" onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-8">
@@ -452,7 +406,7 @@ export function LandDetailDialog({ open, onOpenChange, parcelId, landDetail, onS
                     <Button type="button" variant="ghost" onClick={() => onOpenChange(false)} disabled={isProcessing} className="rounded-full h-12 px-6 font-bold hover:bg-muted">
                         Batal
                     </Button>
-                    <Button type="submit" form="land-detail-form" disabled={(!form.formState.isDirty && !showDraftAlert) || isProcessing} className="rounded-full h-12 px-8 font-bold shadow-lg shadow-primary/20 hover:scale-105 transition-all">
+                    <Button type="submit" form="land-detail-form" disabled={(!form.formState.isDirty) || isProcessing} className="rounded-full h-12 px-8 font-bold shadow-lg shadow-primary/20 hover:scale-105 transition-all">
                         {/* LOGIKA LOADING VISUAL */}
                         {isProcessing ? (
                         <span className="flex items-center gap-2">

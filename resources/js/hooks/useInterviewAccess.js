@@ -16,6 +16,8 @@ export const PARCEL_STATUS = {
     SUBMITTED: 2,
     VERIFIED: 3,
     LOCKED: 4,
+    REVISION: 6,
+    CANCELLED: 5,
 };
 
 /**
@@ -36,7 +38,7 @@ export function useInterviewAccess({ interview, userRole, isOwner }) {
             canAddChildren: false,
             isReadOnly: false,
             isFinal: false,
-            message: 'Isi data bidang lalu simpan untuk melanjutkan.',
+            message: "Isi data bidang lalu simpan untuk melanjutkan.",
         };
     }
 
@@ -52,13 +54,13 @@ export function useInterviewAccess({ interview, userRole, isOwner }) {
             canAddChildren: false,
             isReadOnly: true,
             isFinal: true,
-            message: 'Bidang sudah dikunci. Tidak dapat diubah.',
+            message: "Bidang sudah dikunci. Tidak dapat diubah.",
         };
     }
 
     // 4. Status Draft
     if (statusId === PARCEL_STATUS.DRAFT) {
-        if (userRole === 'surveyor' && isOwner) {
+        if (userRole === "surveyor" && isOwner) {
             return {
                 canEdit: true,
                 canDelete: true,
@@ -75,7 +77,32 @@ export function useInterviewAccess({ interview, userRole, isOwner }) {
             canAddChildren: false,
             isReadOnly: true,
             isFinal: false,
-            message: 'Hanya surveyor pemilik yang dapat mengedit draft ini.',
+            message: "Hanya surveyor pemilik yang dapat mengedit draft ini.",
+        };
+    }
+
+    // 4.5 Status Revisi
+    if (statusId === PARCEL_STATUS.REVISION) {
+        if (userRole === "surveyor" && isOwner) {
+            return {
+                canEdit: true,
+                canDelete: false, // Mencegah data terhapus, hanya boleh diedit/disubmit ulang
+                canSubmit: true,
+                canAddChildren: true,
+                isReadOnly: false,
+                isFinal: false,
+                message: "Silakan perbaiki data sesuai catatan Koordinator.",
+            };
+        }
+        return {
+            canEdit: false,
+            canDelete: false,
+            canSubmit: false,
+            canAddChildren: false,
+            isReadOnly: true,
+            isFinal: false,
+            message:
+                "Hanya surveyor pemilik yang dapat mengakses data revisi ini.",
         };
     }
 
@@ -88,15 +115,16 @@ export function useInterviewAccess({ interview, userRole, isOwner }) {
             canAddChildren: false,
             isReadOnly: true,
             isFinal: false,
-            message: userRole === 'surveyor'
-                ? 'Bidang sudah disubmit. Menunggu verifikasi.'
-                : 'Silahkan lakukan verifikasi pada bidang ini.',
+            message:
+                userRole === "surveyor"
+                    ? "Bidang sudah disubmit. Menunggu verifikasi."
+                    : "Silahkan lakukan verifikasi pada bidang ini.",
         };
     }
 
     // 6. Status Terverifikasi
     if (statusId === PARCEL_STATUS.VERIFIED) {
-        if (userRole === 'koordinator' || userRole === 'admin') {
+        if (userRole === "koordinator" || userRole === "admin") {
             return {
                 canEdit: true,
                 canDelete: true,
@@ -113,7 +141,7 @@ export function useInterviewAccess({ interview, userRole, isOwner }) {
             canAddChildren: false,
             isReadOnly: true,
             isFinal: false,
-            message: 'Hanya verifikator atau admin yang dapat mengedit.',
+            message: "Hanya verifikator atau admin yang dapat mengedit.",
         };
     }
 
@@ -125,7 +153,7 @@ export function useInterviewAccess({ interview, userRole, isOwner }) {
         canAddChildren: false,
         isReadOnly: true,
         isFinal: false,
-        message: 'Status bidang tidak valid.',
+        message: "Status bidang tidak valid.",
     };
 }
 
@@ -136,13 +164,15 @@ export function useInterviewAccess({ interview, userRole, isOwner }) {
  */
 export function getStatusLabel(statusId) {
     const labels = {
-        [PARCEL_STATUS.DRAFT]: 'Draft',
-        [PARCEL_STATUS.SUBMITTED]: 'Disubmit',
-        [PARCEL_STATUS.VERIFIED]: 'Terverifikasi',
-        [PARCEL_STATUS.LOCKED]: 'Terkunci',
+        [PARCEL_STATUS.DRAFT]: "Draft",
+        [PARCEL_STATUS.SUBMITTED]: "Disubmit",
+        [PARCEL_STATUS.VERIFIED]: "Terverifikasi",
+        [PARCEL_STATUS.LOCKED]: "Terkunci",
+        [PARCEL_STATUS.REVISION]: "Revisi",
+        [PARCEL_STATUS.CANCELLED]: "Dibatalkan",
     };
 
-    return labels[Number(statusId)] || 'Tidak Diketahui';
+    return labels[Number(statusId)] || "Tidak Diketahui";
 }
 
 /**
@@ -151,12 +181,22 @@ export function getStatusLabel(statusId) {
  * @returns {string}
  */
 export function getStatusColor(statusId) {
-  const colors = {
-    [PARCEL_STATUS.DRAFT]: 'bg-muted text-muted-foreground',
-    [PARCEL_STATUS.SUBMITTED]: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300',
-    [PARCEL_STATUS.VERIFIED]: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300',
-    [PARCEL_STATUS.LOCKED]: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300',
-  };
+    const colors = {
+        [PARCEL_STATUS.DRAFT]: "bg-muted text-muted-foreground",
+        [PARCEL_STATUS.SUBMITTED]:
+            "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300",
+        [PARCEL_STATUS.VERIFIED]:
+            "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300",
+        [PARCEL_STATUS.LOCKED]:
+            "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300",
+        [PARCEL_STATUS.REVISION]:
+            "bg-rose-100 text-rose-800 dark:bg-rose-900 dark:text-rose-300",
+        [PARCEL_STATUS.CANCELLED]:
+            "bg-slate-100 text-slate-800 dark:bg-slate-900 dark:text-slate-300",
+    };
 
-  return colors[Number(statusId)] || 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300';
+    return (
+        colors[Number(statusId)] ||
+        "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300"
+    );
 }

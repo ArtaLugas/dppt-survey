@@ -47,7 +47,7 @@ class Parcel extends Model
 
     public function primaryRespondent(): HasOne
     {
-        return $this->hasOne(Respondent::class, 'parcel_id', 'is_primary', true);
+        return $this->hasOne(Respondent::class, 'parcel_id')->where('is_primary', true);
     }
 
     public function inventoryItems(): HasMany
@@ -59,6 +59,8 @@ class Parcel extends Model
     {
         return $this->hasMany(DocumentationPhoto::class, 'parcel_id');
     }
+
+    protected $appends = ['submission_readiness'];
 
     // --- Logic: The Golden Ruler 1-2-3 (Photo Validation) ---
     public function getSubmissionReadinessAttribute(): array
@@ -100,7 +102,7 @@ class Parcel extends Model
     protected static function booted()
     {
         static::deleting(function ($parcel) {
-            $photos= $parcel->photos()->get();
+            $photos = $parcel->photos()->get();
 
             foreach ($photos as $photo) {
                 if (!empty($photo->file_path) && Storage::disk('public')->exists($photo->file_path)) {

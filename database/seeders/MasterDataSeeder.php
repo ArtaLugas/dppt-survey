@@ -31,18 +31,17 @@ class MasterDataSeeder extends Seeder
         // ==========================================
         // 3. PARCEL STATUSES (Alur Kerja)
         // ==========================================
-        // PERBAIKAN: Menggunakan 'label' bukan 'description'
         DB::table('parcel_statuses')->insertOrIgnore([
             ['id' => 1, 'code' => 'draft', 'label' => 'Draft (Input Surveyor)'],
             ['id' => 2, 'code' => 'submitted', 'label' => 'Menunggu Review Koordinator'],
             ['id' => 3, 'code' => 'verified', 'label' => 'Disetujui Koordinator'],
             ['id' => 4, 'code' => 'locked', 'label' => 'Final (Terkunci)'],
+            ['id' => 5, 'code' => 'revision', 'label' => 'Butuh Revisi'], // Tambahan: Status revisi sangat krusial
         ]);
 
         // ==========================================
-        // 4. RESPONDENT ROLES (Kiri vs Kanan Excel)
+        // 4. RESPONDENT ROLES
         // ==========================================
-        // PERBAIKAN: Menggunakan 'label' bukan 'description'
         DB::table('respondent_roles')->insertOrIgnore([
             ['id' => 1, 'code' => 'pemilik', 'label' => 'Pihak Yang Berhak (Owner)'],
             ['id' => 2, 'code' => 'penggarap', 'label' => 'Pihak Yang Menguasai/Menyewa'],
@@ -61,40 +60,45 @@ class MasterDataSeeder extends Seeder
         ]);
 
         // ==========================================
-        // 6. CREATE DEFAULT USERS (Untuk Login)
+        // 6. CREATE DEFAULT USERS (Dengan Kolom Phone)
         // ==========================================
 
-        // A. User Admin
-        DB::table('users')->insertOrIgnore([
-            'name' => 'Super Admin',
-            'email' => 'admin@system.com',
-            'password' => Hash::make('password'),
-            'role_id' => 1, // Admin
-            'is_active' => true,
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
+        $defaultPassword = Hash::make('password');
 
-        // B. User Koordinator
         DB::table('users')->insertOrIgnore([
-            'name' => 'Budi Koordinator',
-            'email' => 'koordinator@system.com',
-            'password' => Hash::make('password'),
-            'role_id' => 2, // Koordinator
-            'is_active' => true,
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
-
-        // C. User Surveyor
-        DB::table('users')->insertOrIgnore([
-            'name' => 'Andi Surveyor',
-            'email' => 'surveyor@system.com',
-            'password' => Hash::make('password'),
-            'role_id' => 3, // Surveyor
-            'is_active' => true,
-            'created_at' => now(),
-            'updated_at' => now(),
+            // A. User Admin
+            [
+                'name' => 'Super Admin',
+                'email' => 'admin@system.com',
+                'phone' => '081122334455', // Sinkron dengan UI
+                'password' => $defaultPassword,
+                'role_id' => 1,
+                'is_active' => true,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+            // B. User Koordinator
+            [
+                'name' => 'Budi Koordinator',
+                'email' => 'koordinator@system.com',
+                'phone' => '081234567890',
+                'password' => $defaultPassword,
+                'role_id' => 2,
+                'is_active' => true,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+            // C. User Surveyor
+            [
+                'name' => 'Andi Surveyor',
+                'email' => 'surveyor@system.com',
+                'phone' => '089988776655',
+                'password' => $defaultPassword,
+                'role_id' => 3,
+                'is_active' => true,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
         ]);
     }
 }

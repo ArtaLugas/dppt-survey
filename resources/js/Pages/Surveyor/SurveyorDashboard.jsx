@@ -53,7 +53,7 @@ export default function SurveyorDashboard({ parcels, serverStats }) {
 
                 {/* ── KARTU STATISTIK (GLOBAL SERVER DATA) ── */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                    <StatCard title="Draft" value={serverStats?.draft || 0} icon={FileText} description="Belum diajukan" variant="default" />
+                    <StatCard title="Draft & Revisi" value={(serverStats?.draft || 0) + (serverStats?.revision || 0)} icon={FileText} description="Butuh tindakan" variant="default" />
                     <StatCard title="Submitted" value={serverStats?.submitted || 0} icon={Send} description="Menunggu verifikasi" variant="primary" />
                     <StatCard title="Verified" value={serverStats?.verified || 0} icon={CheckCircle} description="Disetujui Koordinator" variant="success" />
                     <StatCard title="Locked" value={serverStats?.locked || 0} icon={Lock} description="Selesai (Read-only)" variant="danger" />
@@ -63,7 +63,7 @@ export default function SurveyorDashboard({ parcels, serverStats }) {
                 <div className="mt-8 space-y-4">
                     <div className="flex items-center justify-between px-1 mb-2">
                         <h3 className="text-lg font-semibold text-slate-800 tracking-tight">
-                            Pekerjaan Tertunda (Draft)
+                            Pekerjaan Tertunda (Draft & Revisi)
                         </h3>
                         {parcels.total > 0 && (
                             <span className="text-[13px] font-medium text-slate-500 bg-white px-3 py-1 rounded-full border border-slate-200/80 shadow-sm">

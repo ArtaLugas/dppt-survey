@@ -18,7 +18,7 @@ class SurveyorDashboardController extends Controller
         $parcels = Parcel::with(['status', 'landDetail', 'respondents', 'surveyor', 'inventoryItems', 'photos'])
             ->where('surveyor_id', $userId)
             ->whereHas('status', function ($query) {
-                $query->where('code', 'draft', 'revision');
+                $query->whereIn('code', ['draft', 'revision']);
             })
             ->latest()
             ->paginate(10);
@@ -26,12 +26,13 @@ class SurveyorDashboardController extends Controller
         // 2. LOGIKA STATISTIK TETAP AMAN (Menggunakan relasi status)
         $stats = [
             'draft'     => Parcel::where('surveyor_id', $userId)->whereHas('status', fn($q) => $q->where('code', 'draft'))->count(),
+            'revision'  => Parcel::where('surveyor_id', $userId)->whereHas('status', fn($q) => $q->where('code', 'revision'))->count(),
             'submitted' => Parcel::where('surveyor_id', $userId)->whereHas('status', fn($q) => $q->where('code', 'submitted'))->count(),
             'verified'  => Parcel::where('surveyor_id', $userId)->whereHas('status', fn($q) => $q->where('code', 'verified'))->count(),
             'locked'    => Parcel::where('surveyor_id', $userId)->whereHas('status', fn($q) => $q->where('code', 'locked'))->count(),
         ];
 
-        return Inertia::render('Dashboard/Surveyor', [
+        return Inertia::render('Surveyor/SurveyorDashboard', [
             'parcels'     => $parcels,
             'serverStats' => $stats
         ]);

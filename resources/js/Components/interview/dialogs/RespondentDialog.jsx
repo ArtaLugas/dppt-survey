@@ -38,11 +38,7 @@ const formSchema = z.object({
   noTelepon: z.string().optional().default(''),
 });
 
-// PERBAIKAN: Wajib menerima parcelId untuk kunci brankas LocalStorage
 export function RespondentDialog({ open, onOpenChange, parcelId, respondent, respondentRoles = [], onSubmit, isProcessing }) {
-  // 1. Kunci Brankas
-  const storageKey = `draft_respondent_${parcelId || 'new'}_${respondent?.id || 'new'}`;
-  const [showDraftAlert, setShowDraftAlert] = useState(false);
 
   const form = useForm({
     resolver: zodResolver(formSchema),
@@ -74,21 +70,7 @@ export function RespondentDialog({ open, onOpenChange, parcelId, respondent, res
             };
 
             let initialValues = { ...dbValues };
-            let hasDraft = false;
 
-            // Cek Brankas
-            try {
-                const saved = window.localStorage.getItem(storageKey);
-                if (saved) {
-                const parsed = JSON.parse(saved);
-                if (JSON.stringify(parsed) !== JSON.stringify(dbValues)) {
-                    initialValues = parsed;
-                    hasDraft = true;
-                }
-                }
-            } catch (e) { console.warn('Gagal membaca draf lokal', e); }
-
-            setShowDraftAlert(hasDraft);
             form.reset(initialValues);
             } else {
             // Reset saat dialog ditutup
@@ -96,21 +78,10 @@ export function RespondentDialog({ open, onOpenChange, parcelId, respondent, res
                 nama: '', role_id: 1, isPrimary: false, nik: '', tempatLahir: '',
                 tanggalLahir: '', pekerjaan: '', alamatKtp: '', noTelepon: '',
             });
-            setShowDraftAlert(false);
         }
-    }, [respondent, form, open, storageKey]);
+    }, [respondent, form, open]);
 
-  // 3. ENGINE AUTO-SAVE (Merekam ketikan setiap 500ms)
-  useEffect(() => {
-    if (!open) return;
-    const subscription = form.watch((value) => {
-      const timeoutId = setTimeout(() => {
-        window.localStorage.setItem(storageKey, JSON.stringify(value));
-      }, 500);
-      return () => clearTimeout(timeoutId);
-    });
-    return () => subscription.unsubscribe();
-  }, [form.watch, open, storageKey]);
+
 
   // 4. INTERSEPTOR SUBMIT
   const handleFormSubmit = (values) => {
@@ -129,9 +100,6 @@ export function RespondentDialog({ open, onOpenChange, parcelId, respondent, res
 
     onSubmit(submitPayload, {
       onSuccess: () => {
-        // Hapus brankas karena berhasil disave ke DB
-        window.localStorage.removeItem(storageKey);
-        setShowDraftAlert(false);
         onOpenChange(false);
       }
     });
@@ -159,18 +127,7 @@ export function RespondentDialog({ open, onOpenChange, parcelId, respondent, res
                 {/* --- ROW 2: FORM BODY (Area Scroll Aktif) --- */}
                 <div className="overflow-y-auto p-6 md:p-8 space-y-6">
 
-                {/* ALERT DRAF LOKAL */}
-                {showDraftAlert && (
-                    <Alert className="rounded-2xl border-2 bg-amber-50 border-amber-200 text-amber-800 shadow-sm">
-                    <AlertTriangle className="h-5 w-5 text-amber-600" />
-                    <div className="ml-2">
-                        <AlertTitle className="font-bold text-sm">Draf Dipulihkan!</AlertTitle>
-                        <AlertDescription className="text-xs mt-1 font-medium">
-                        Ketikan Anda sebelumnya berhasil diselamatkan dari memori browser.
-                        </AlertDescription>
-                    </div>
-                    </Alert>
-                )}
+
 
                 <Form {...form}>
                     <form id="respondent-form" onSubmit={form.handleSubmit(handleFormSubmit, (errors) => {console.error("Zod memblokir submit. Error:", errors);
@@ -359,7 +316,7 @@ export function RespondentDialog({ open, onOpenChange, parcelId, respondent, res
                 <Button
                     type="submit"
                     form="respondent-form"
-                    disabled={(!form.formState.isDirty && !showDraftAlert) || isProcessing}
+                    disabled={(!form.formState.isDirty) || isProcessing}
                     className="rounded-full h-12 px-8 font-bold shadow-lg shadow-primary/20 hover:scale-105 transition-all flex items-center gap-2"
                 >
                     {isProcessing && <Loader2 className="h-5 w-5 animate-spin" />}
